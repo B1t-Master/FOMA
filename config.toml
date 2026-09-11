@@ -1,0 +1,43 @@
+# FOMA runtime configuration. All values are optional; anything omitted
+# falls back to the built-in default.
+
+[app]
+# How often to poll for the skip button (seconds). Lower = snappier, more CPU.
+poll_interval_s = 0.5
+
+# Minimum gap between two actions (seconds). Prevents double-clicks.
+cooldown_s = 4.0
+
+# Browsers to monitor. Supported: "chrome", "edge", "firefox".
+browsers = ["chrome", "firefox"]
+
+# Where the JSONL event log is written.
+log_dir = "logs"
+
+# Restore the mouse cursor to its previous position after clicking.
+cursor_restore = true
+
+# How often the console prints a telemetry summary line (seconds).
+console_summary_interval_s = 30.0
+
+# How often RAM usage is sampled (seconds).
+ram_sample_interval_s = 5.0
+
+[detection]
+# Use Windows UI Automation as the primary detector.
+uia_enabled = true
+
+# Fall back to screen-capture template matching when UIA finds nothing.
+screen_fallback = true
+
+# Directory containing PNG crops of the skip button for the fallback detector.
+template_dir = "assets/templates"
+
+# Button name patterns matched against the accessibility tree.
+name_patterns = [".*skip.*ad.*", ".*ad.*skip.*"]
+
+# Minimum confidence (0..1) for the screen-capture detector.
+confidence = 0.85
+
+# Max depth to search the accessibility tree.
+search_depth = 24

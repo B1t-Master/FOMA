@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foma"
+version = "0.1.0"
+description = "FOMA - Fear Of More Ads. A lightweight background tool that auto-skips YouTube ads via Windows UI Automation."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "FOMA contributors" }]
+keywords = ["youtube", "ads", "ui-automation", "accessibility", "background", "windows"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "uiautomation>=2.0.0",
+    "pynput>=1.7.6",
+    "psutil>=5.9.0",
+]
+
+[project.optional-dependencies]
+fallback = [
+    "mss>=9.0.1",
+    "opencv-python-headless>=4.8.0",
+    "numpy>=1.24.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.4.0",
+    "mypy>=1.8.0",
+]
+
+[project.scripts]
+foma = "foma.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+foma = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["foma"]
+strict = false
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pynput.*",
+    "psutil.*",
+    "uiautomation.*",
+    "mss.*",
+    "cv2.*",
+    "numpy.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
