@@ -1,4 +1,4 @@
-# FOMA — Fear Of More Ads
+# FOMA - Fear Of More Ads
 
 A small, quiet background tool that **skips YouTube ads for you** while you watch. It runs on Windows, watches Chrome and Firefox, and the moment YouTube shows a "Skip" button, FOMA clicks it the way you would right behind your back. Also eliminates the physical need to make precise, timed mouse movements to target small UI buttons for users with fine motor control challenges, tremors, or repetitive strain injuries (RSI). Just a better Youtube viewing experience.
 
@@ -23,8 +23,8 @@ poll (0.5s) → detect (UI Automation) → click "Skip" at its real X/Y → cool
 
 Two more things worth knowing:
 
-- YouTube ignores clicks that don't come from a real user — scripts and extensions clicking an element are detected and ignored (the event's `isTrusted` flag is `false`). FOMA sidesteps this by driving the **real mouse through Windows**, so the click is indistinguishable from your own.
-- When UI Automation can't see things (older browsers), FOMA can fall back to **screen-capture template matching** using crops you drop into `assets/templates`.
+- YouTube ignores clicks that don't come from a real user - scripts and extensions clicking an element are detected and ignored (the event's `isTrusted` flag is `false`). FOMA sidesteps this by driving the **real mouse through Windows**, so the click is indistinguishable from your own.
+- When UI Automation can't see things (older browsers), FOMA can fall back to **screen-capture template matching** using crops you drop into `assets/templates` (still a work in progress however you can add your own assets).
 
 ## Requirements
 
@@ -56,7 +56,7 @@ pip install -e ".[dev,fallback]"
    ```
 
    (If you didn't install yet: the venv was created in **Install**, below.)
-   No activation? No problem — just call the interpreter directly:
+   No activation? No problem - just call the interpreter directly:
    `\.venv\Scripts\python.exe -m foma` works the same.
 
 3. **Start it:**
@@ -65,7 +65,7 @@ pip install -e ".[dev,fallback]"
    python -m foma
    ```
 
-   That's it. Leave the window open — FOMA sits quietly in the background and
+   That's it. Leave the window open - FOMA sits quietly in the background and
    will click the next "Skip" it sees. You can keep it running while you browse.
    Stop it anytime with **Ctrl+C**.
 
@@ -80,7 +80,7 @@ pip install -e ".[dev,fallback]"
    Eyeing the terminal for the next ad is a great way to verify the install.
 
 Want a quick sanity check instead of waiting for an ad? Run one scan and exit:
-`python -m foma --once` — it logs whether a Skip button was found right now.
+`python -m foma --once` - it logs whether a Skip button was found right now.
 
 ## Usage
 
@@ -122,7 +122,7 @@ FOMA/
 └── tests/                 # 74 tests, no browser needed
 ```
 
-The core is deliberately lean — it only depends on `uiautomation`, `pynput` and `psutil`. The screen fallback stack (`mss`, `opencv`, `numpy`) is imported lazily, so it never slows down UIA-only use.
+The core is deliberately lean - it only depends on `uiautomation`, `pynput` and `psutil`. The screen fallback stack (`mss`, `opencv`, `numpy`) is imported lazily, so it never slows down UIA-only use.
 
 Each piece is small and dependency-injected, so swapping a detector or adding a dashboard later is a change in one place.
 
@@ -140,9 +140,9 @@ Real numbers from the current build on this machine:
 
 Notes:
 
-- Sleep comes cheap — the poll loop only consumes real CPU while actually scanning, and scanning runs in a worker thread so YouTube never stutters.
+- Sleep comes cheap - the poll loop only consumes real CPU while actually scanning, and scanning runs in a worker thread so YouTube never stutters.
 - The scan is depth/range limited, so a slow "no ads" run costs at most a few seconds and falls back to quiet sleep.
-- If you keep YouTube open for hours, bumping `poll_interval_s` to 2 saves CPU with no real downside — ads don't appear that fast.
+- If you keep YouTube open for hours, bumping `poll_interval_s` to 2 saves CPU with no real downside - ads don't appear that fast.
 
 ## Tests
 
@@ -164,12 +164,12 @@ Be honest about what FOMA won't do:
 - **The tab must be visible.** If the video tab is on another workspace or minimized in a way the OS reports off-screen, FOMA deliberately does nothing rather than click blindly.
 - **It grabs the empty hand sometimes.** Ad designs change; if YouTube stops labelling the button "Skip" in a recognisable way, FOMA just won't click until the pattern list is updated (that's what `name_patterns` is for).
 - **CPU while scanning.** A big YouTube window means a slightly heavier scan (a second or two every few seconds).
-- **Terms of Service.** Skipping ads automatically may not sit well with YouTube's ToS. It's your machine and your call — use at your own discretion.
+- **Terms of Service.** Skipping ads automatically may not sit well with YouTube's ToS. It's your machine and your call - use at your own discretion.
 
 ## Future improvements
 
 - **GitHub action workflows to protect main**
-- **Browser-extension companion, if Google allows it.** An extension could react instantly (no polling, no mouse) — YouTube has historically not offered a supported API for skipping ads, so this stays a "nice if it ever becomes possible" item. FOMA stays useful meanwhile because it needs no page access at all.
+- **Browser-extension companion, if Google allows it.** An extension could react instantly (no polling, no mouse) - YouTube has historically not offered a supported API for skipping ads, so this stays a "nice if it ever becomes possible" item. FOMA stays useful meanwhile because it needs no page access at all.
 - **Native apps on other operating systems.**
 - **A live dashboard or SSE stream.** The internal event bus is already pub/sub-ready, so a web page or local dashboard could subscribe without touching the core.
 - **Smarter scanning.** Region budgeting (only scan the player area once the tab is identified) and faster negative scans.
@@ -177,9 +177,9 @@ Be honest about what FOMA won't do:
 
 ## Deployment
 
-- `deploy/install.ps1` — registers an **on-logon scheduled task** that starts FOMA silently with `pythonw` (no console window).
-- `deploy/uninstall.ps1` — removes that task.
-- `deploy/build.ps1` + `deploy/foma.spec` — package a standalone `.exe` with PyInstaller, so target machines don't need Python at all.
+- `deploy/install.ps1` - registers an **on-logon scheduled task** that starts FOMA silently with `pythonw` (no console window).
+- `deploy/uninstall.ps1` - removes that task.
+- `deploy/build.ps1` + `deploy/foma.spec` - package a standalone `.exe` with PyInstaller, so target machines don't need Python at all.
 
 ## Branching
 
