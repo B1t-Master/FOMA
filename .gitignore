@@ -19,6 +19,7 @@ htmlcov/
 # Runtime artifacts
 logs/
 *.log
+tools/dump-uia.log
 
 # OS
 Thumbs.db

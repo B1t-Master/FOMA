@@ -32,9 +32,9 @@ DEFAULTS: dict[str, Any] = {
         "uia_enabled": True,
         "screen_fallback": True,
         "template_dir": "assets/templates",
-        "name_patterns": [".*skip.*ad.*", ".*ad.*skip.*"],
+        "name_patterns": [r"skip\s*(ads?)?\s*$", ".*ad.*skip.*"],
         "confidence": 0.85,
-        "search_depth": 24,
+        "search_depth": 64,
     },
 }
 
@@ -69,9 +69,9 @@ class DetectionConfig:
     uia_enabled: bool = True
     screen_fallback: bool = True
     template_dir: Path = Path("assets/templates")
-    name_patterns: tuple[str, ...] = (".*skip.*ad.*", ".*ad.*skip.*")
+    name_patterns: tuple[str, ...] = (r"skip\s*(ads?)?\s*$", ".*ad.*skip.*")
     confidence: float = 0.85
-    search_depth: int = 24
+    search_depth: int = 64
 
 
 @dataclass(frozen=True)

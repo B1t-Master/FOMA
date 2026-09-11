@@ -1,10 +1,19 @@
 """Primary detector: Windows UI Automation.
 
 Reads the accessibility tree of the running browser. The "Skip Ad" button is
-found by its accessible name (e.g. "Skip Ad") and role (Button), not by pixels,
-so resolution, zoom level, colour scheme, view mode and DPI scaling are all
-irrelevant. The OS gives us the button's exact on-screen rectangle, which the
-click engine then targets.
+found by its accessible name (e.g. "Skip", "Skip Ad", "Skip Ads") and role
+(Button), not by pixels, so resolution, zoom level, colour scheme, view mode and
+DPI scaling are all irrelevant. The OS gives us the button's exact on-screen
+rectangle, which the click engine then targets.
+
+The search is a bounded depth-first walk of the window's control tree done
+client-side:
+
+- the regex is matched case-insensitively (the ``uiautomation`` library's own
+  ``RegexName`` filter is case-sensitive, which would hide any real "Skip" button)
+- the walk is capped by a node budget so "no ad running" misses stay cheap
+- a candidate is only accepted if it is a clickable control type that is
+  currently on-screen, so off-screen decoys such as "Skip navigation" are skipped
 
 Supports Chrome/Edge (``Chrome_WidgetWin_1``) and Firefox (``MozillaWindowClass``).
 """
@@ -12,6 +21,7 @@ Supports Chrome/Edge (``Chrome_WidgetWin_1``) and Firefox (``MozillaWindowClass`
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from .base import Detection, Detector
 
@@ -21,12 +31,22 @@ BROWSER_CLASSES: dict[str, tuple[str, ...]] = {
     "firefox": ("MozillaWindowClass",),
 }
 
-# How many candidate matches to probe per control type before giving up.
-_MAX_MATCHES = 6
+# YouTube exposes the button as just "Skip" (new UI) or "Skip Ad"/"Skip Ads"
+# (legacy UI/localisations). Anchored so "Skip navigation" does not match.
+DEFAULT_NAME_PATTERNS: tuple[str, ...] = (r"skip\s*(ads?)?\s*$", r".*ad.*skip.*")
 
-# Per-probe existence timeout. When no ad is playing the skip button is absent,
-# so this bounds the cost of a "miss" (short) while keeping hits instant.
-_EXISTS_TIMEOUT_S = 0.03
+# The real button lives quite deep in the browser's DOM (observable ~depth 29);
+# leave generous headroom without walking the entire 128-level tree.
+DEFAULT_SEARCH_DEPTH = 64
+
+# Cap on nodes visited per window per pass, so "no ad" misses are bounded.
+# YouTube's player DOM is large (2k+ nodes); leave headroom so the skip button
+# is never cut off mid-scan.
+_MAX_NODES = 4000
+
+# UIA control types that are safe to click. Chrome renders HTML <button> as a
+# ButtonControl; some players expose it as a custom control instead.
+_CLICKABLE_TYPES = {"ButtonControl", "CustomControl"}
 
 
 def _load_uiautomation():
@@ -41,18 +61,22 @@ class UIADetector(Detector):
 
     def __init__(
         self,
-        name_patterns: tuple[str, ...] = (".*skip.*ad.*", ".*ad.*skip.*"),
+        name_patterns: tuple[str, ...] = DEFAULT_NAME_PATTERNS,
         browsers: tuple[str, ...] = ("chrome", "firefox"),
-        search_depth: int = 24,
+        search_depth: int = DEFAULT_SEARCH_DEPTH,
+        max_nodes: int = _MAX_NODES,
         _auto_module=None,
     ) -> None:
-        self._joined_pattern = "|".join(f"(?:{p})" for p in name_patterns)
-        self._matched_name = re.compile(self._joined_pattern, re.IGNORECASE)
+        self._matched_name = re.compile(
+            "|".join(f"(?:{p})" for p in name_patterns), re.IGNORECASE
+        )
         self._classes: set[str] = set()
         for browser in browsers:
             self._classes.update(BROWSER_CLASSES.get(browser, ()))
         self._search_depth = search_depth
+        self._max_nodes = max_nodes
         self._auto_module = _auto_module
+        self._remaining = max_nodes
 
     def detect(self) -> Detection | None:
         auto = self._auto_module if self._auto_module is not None else _load_uiautomation()
@@ -61,7 +85,8 @@ class UIADetector(Detector):
             try:
                 if not self._is_browser_window(window):
                     continue
-                button = self._find_skip_button(auto, window)
+                self._remaining = self._max_nodes
+                button = self._find_skip_button(window)
                 if button is not None:
                     return self._to_detection(button)
             except Exception:
@@ -73,24 +98,40 @@ class UIADetector(Detector):
             return False
         return bool(getattr(window, "IsVisible", True))
 
-    def _find_skip_button(self, auto, window):
-        for control_type in (
-            auto.ControlType.ButtonControl,
-            auto.ControlType.CustomControl,
-        ):
-            for index in range(1, _MAX_MATCHES + 1):
-                candidate = window.Control(
-                    searchDepth=self._search_depth,
-                    foundIndex=index,
-                    ControlType=control_type,
-                    RegexName=self._matched_name.pattern,
-                )
-                if not candidate.Exists(_EXISTS_TIMEOUT_S):
-                    break
-                name = candidate.Name or ""
-                if self._matched_name.match(name) and not candidate.IsOffscreen:
-                    return candidate
+    def _find_skip_button(self, window) -> Any:
+        stack: list[tuple[Any, int]] = [(window, 0)]
+        while stack:
+            if self._remaining <= 0:
+                return None
+            control, depth = stack.pop()
+            self._remaining -= 1
+            if depth > self._search_depth:
+                continue
+            try:
+                name = control.Name or ""
+            except Exception:
+                continue
+            if not self._matched_name.match(name):
+                self._push_children(stack, control, depth)
+                continue
+            # Name matches: accept only if it is a clickable, on-screen control.
+            try:
+                if control.ControlTypeName not in _CLICKABLE_TYPES:
+                    continue
+                if control.IsOffscreen:
+                    continue
+            except Exception:
+                continue
+            return control
         return None
+
+    def _push_children(self, stack: list, control: Any, depth: int) -> None:
+        try:
+            children = control.GetChildren()
+        except Exception:
+            return
+        for child in children:
+            stack.append((child, depth + 1))
 
     def _to_detection(self, button) -> Detection | None:
         rect = button.BoundingRectangle

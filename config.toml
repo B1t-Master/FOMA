@@ -33,11 +33,12 @@ screen_fallback = true
 # Directory containing PNG crops of the skip button for the fallback detector.
 template_dir = "assets/templates"
 
-# Button name patterns matched against the accessibility tree.
-name_patterns = [".*skip.*ad.*", ".*ad.*skip.*"]
+# Button name patterns matched against the accessibility tree (case-insensitive).
+# YouTube's new UI names it just "Skip"; legacy/localised UIs use "Skip Ad".
+name_patterns = ["skip\\s*(ads?)?\\s*$", ".*ad.*skip.*"]
 
 # Minimum confidence (0..1) for the screen-capture detector.
 confidence = 0.85
 
 # Max depth to search the accessibility tree.
-search_depth = 24
+search_depth = 64
