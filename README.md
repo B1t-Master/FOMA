@@ -1,6 +1,6 @@
 # FOMA — Fear Of More Ads
 
-A small, quiet background tool that **skips YouTube ads for you** while you watch. It runs on Windows, watches Chrome and Firefox, and the moment YouTube shows a "Skip" button, FOMA clicks it the way you would — right behind your back.
+A small, quiet background tool that **skips YouTube ads for you** while you watch. It runs on Windows, watches Chrome and Firefox, and the moment YouTube shows a "Skip" button, FOMA clicks it the way you would right behind your back. Also eliminates the physical need to make precise, timed mouse movements to target small UI buttons for users with fine motor control challenges, tremors, or repetitive strain injuries (RSI). Just a better Youtube viewing experience.
 
 No browser extension. No screenshots. No moving parts in the page itself.
 
@@ -93,34 +93,6 @@ foma                    # same as `python -m foma`, once installed
 
 Want it to start by itself at login? See **Deployment** — `deploy/install.ps1` registers a silent on-logon task.
 
-### What you'll see
-
-```
-[12:04:31] STARTUP detectors=[uia,screen]
-[12:04:36] TELEMETRY ram_mb=27.5 peak_mb=57.3 avg_total_ms=12.4 last_total_ms=11.9 detect_ms=11.1 skipped=0 detections=0 errors=0
-[12:04:41] AD_DETECTED rect=(1250,882,120x40) detector=uia detect_ms=2047
-[12:04:41] SKIP_CLICKED at=(1310,902) click_ms=31
-[12:04:44] SHUTDOWN state=idle uptime_s=62.3
-```
-
-Every event is also written as JSON to `logs/foma-YYYY-MM-DD.jsonl` (a new file each day), so you can graph or replay what happened:
-
-```json
-{
-  "type": "ad_detected",
-  "ts": 1789097006.1,
-  "data": {
-    "x": 1250,
-    "y": 882,
-    "width": 120,
-    "height": 40,
-    "confidence": 1.0,
-    "detector": "uia",
-    "latency_ms": 2047
-  }
-}
-```
-
 ## Project structure
 
 ```
@@ -178,8 +150,6 @@ The suite is written against fake UI components, so it runs anywhere, no browser
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest      # 74 unit tests
-.\.venv\Scripts\ruff.exe check src tests tools
-.\.venv\Scripts\python.exe -m mypy src
 .\.venv\Scripts\python.exe -m foma --once # live smoke test against real screen
 ```
 
@@ -193,13 +163,14 @@ Be honest about what FOMA won't do:
 - **Needs a browser that exports UI Automation.** That's all modern Chrome/Edge/Firefox; old Chrome needs the accessibility flag.
 - **The tab must be visible.** If the video tab is on another workspace or minimized in a way the OS reports off-screen, FOMA deliberately does nothing rather than click blindly.
 - **It grabs the empty hand sometimes.** Ad designs change; if YouTube stops labelling the button "Skip" in a recognisable way, FOMA just won't click until the pattern list is updated (that's what `name_patterns` is for).
-- **CPU while scanning.** A big YouTube window means a slightly heavier scan (a second or two every few seconds). Raising the polling interval softens this.
+- **CPU while scanning.** A big YouTube window means a slightly heavier scan (a second or two every few seconds).
 - **Terms of Service.** Skipping ads automatically may not sit well with YouTube's ToS. It's your machine and your call — use at your own discretion.
 
 ## Future improvements
 
+- **GitHub action workflows to protect main**
 - **Browser-extension companion, if Google allows it.** An extension could react instantly (no polling, no mouse) — YouTube has historically not offered a supported API for skipping ads, so this stays a "nice if it ever becomes possible" item. FOMA stays useful meanwhile because it needs no page access at all.
-- **Native apps on other operating systems.** macOS already exposes an accessibility API (`AXUIElement`) and Linux has AT-SPI — the architecture ports over; only the detector changes.
+- **Native apps on other operating systems.**
 - **A live dashboard or SSE stream.** The internal event bus is already pub/sub-ready, so a web page or local dashboard could subscribe without touching the core.
 - **Smarter scanning.** Region budgeting (only scan the player area once the tab is identified) and faster negative scans.
 - **Better fallback templates.** Bundled default templates so the screen-capture mode works out of the box.
